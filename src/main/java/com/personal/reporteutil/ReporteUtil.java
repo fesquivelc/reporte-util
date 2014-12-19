@@ -28,22 +28,34 @@ import net.sf.jasperreports.view.JasperViewer;
 public class ReporteUtil {
 
     private Connection conn;
+    public String url;
+    public String usuario;
+    public String password;
+    public String driver;
     private static final Logger LOG = Logger.getLogger(ReporteUtil.class.getName());
     private static final File insignia = new File("reportes/insignia.jpg");
     private static final String rutaRelativa = new File(".").getAbsolutePath().substring(0, new File(".").getAbsolutePath().length() - 2);
+
+    public ReporteUtil(String driver, String url, String usuario, String password) {
+        this.driver = driver;
+        this.url = url;
+        this.usuario = usuario;
+        this.password = password;
+    }
     
 
     public void verRuta(){
         LOG.info(insignia.getAbsolutePath());
         LOG.info(rutaRelativa);
     }
-    public void generarReporte(File reporte, Map parametros, Frame ventana) throws JRException {
+    
+    private Connection conectar(){
         LOG.info("RUTA ABSOLUTA: "+rutaRelativa);
         try {
-            Class.forName("org.postgresql.Driver");            
+            Class.forName(this.driver);            
 //            Class.forName("com.mysql.jdbc.Driver");
 //            conn = DriverManager.getConnection("jdbc:postgresql://127.0.0.1:5432/inventario1","postgres","root");            
-            conn = DriverManager.getConnection("jdbc:postgresql://127.0.0.1:5432/inventario", "postgres", "root");
+            conn = DriverManager.getConnection(this.url, this.usuario, this.password);
 //            DAO dao = new DAO();
 //            conn = dao.getEntityManager().unwrap(Connection.class);
             if (conn == null) {
@@ -51,9 +63,15 @@ public class ReporteUtil {
             } else {
                 System.out.println("SI SE CONECTA " + conn);
             }
+            return conn;
         } catch (Exception ex) {
             System.out.println("ESTO ES MALO1: " + ex.getMessage());
+            return null;
         }
+        
+    }
+    public void generarReporte(File reporte, Map parametros, Frame ventana) throws JRException {
+        Connection conexion = this.conectar();
         JDialog visor = new JDialog(ventana, "Reporte", true);
 
         JasperReport report = (JasperReport) JRLoader.loadObject(reporte);
@@ -66,7 +84,7 @@ public class ReporteUtil {
         parametros.put("ruta", rutaRelativa);
         LOG.log(Level.INFO, "La ruta relativa es {0}", rutaRelativa);
 //        parametros.put("logo",logo.getAbsolutePath());
-        JasperPrint jasperPrint = JasperFillManager.fillReport(report, parametros, conn);
+        JasperPrint jasperPrint = JasperFillManager.fillReport(report, parametros, conexion);
         JasperViewer jasperViewer = new JasperViewer(jasperPrint, false);
         visor.setSize(jasperViewer.getSize());
 //        visor.setSize(ventana.getSize().width, ventana.getSize().height);
